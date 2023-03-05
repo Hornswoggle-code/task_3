@@ -9,6 +9,17 @@ import numpy as np
 from scipy.optimize import curve_fit
 
 
+def mark_promos(product_key, dates):
+    i = 0
+    while i < len(dates):
+        start = dates[i]
+        while i < len(dates) - 1 and (dates[i + 1] - dates[i]) / np.timedelta64(1, 'D') == 1.0:
+            i += 1
+        end = dates[i]
+        i += 1
+        plt.axvspan(start, end, color='green', alpha=0.2)
+
+
 def predict_baseline(product_key, transactions):
     if not os.path.exists(f'baseline_{product_key}'):
         os.mkdir(f'baseline_{product_key}')
@@ -32,10 +43,9 @@ def predict_baseline(product_key, transactions):
              l1, l2, l3, l4, l5, l6, l7, l8, l9, l10, l11, l12, l13, l14, l15, l16,
              m1, m2, m3, m4, m5, m6, m7, m8, m9, m10, m11, m12, m13, m14, m15, m16,
              n1, n2, n3, n4, n5, n6, n7, n8):
-        return a \
-            + (x * t ** 3 + b * t ** 2 + c * t + d) * \
-            (k1 * np.sin(2 * np.pi * t / 1096) + k2 * np.sin(4 * np.pi * t / 1096)
-             + k3 * np.cos(2 * np.pi * t / 1096) + k4 * np.cos(4 * np.pi * t / 1096)
+        return a + k1 * np.sin(2 * np.pi * t / 1096) + k2 * np.cos(2 * np.pi * t / 1096) \
+            + (b * t ** 2 + c * t + d) * \
+            (k3 * np.sin(4 * np.pi * t / 1096) + k4 * np.cos(4 * np.pi * t / 1096)
              + l1 * np.sin(2 * np.pi * t / 365) + l2 * np.sin(4 * np.pi * t / 365)
              + l3 * np.sin(6 * np.pi * t / 365) + l4 * np.sin(8 * np.pi * t / 365)
              + l5 * np.sin(10 * np.pi * t / 365) + l6 * np.sin(12 * np.pi * t / 365)
@@ -52,10 +62,10 @@ def predict_baseline(product_key, transactions):
              + m11 * np.cos(22 * np.pi * t / 365) + m12 * np.cos(24 * np.pi * t / 365)
              + m13 * np.cos(26 * np.pi * t / 365) + m14 * np.cos(28 * np.pi * t / 365)
              + m15 * np.cos(30 * np.pi * t / 365) + m16 * np.cos(32 * np.pi * t / 365)) \
-            + (y * t ** 3 + e * t ** 2 + f * t + g) * (n1 * np.sin(2 * np.pi * t / 7) + n2 * np.sin(4 * np.pi * t / 7)
-                                          + n3 * np.sin(6 * np.pi * t / 7) + n4 * np.sin(8 * np.pi * t / 7)
-                                          + n5 * np.cos(2 * np.pi * t / 7) + n6 * np.cos(4 * np.pi * t / 7)
-                                          + n7 * np.cos(6 * np.pi * t / 7) + n8 * np.cos(8 * np.pi * t / 7))
+            + (e * t ** 2 + f * t + g) * (n1 * np.sin(2 * np.pi * t / 7) + n2 * np.sin(4 * np.pi * t / 7)
+                                                       + n3 * np.sin(6 * np.pi * t / 7) + n4 * np.sin(8 * np.pi * t / 7)
+                                                       + n5 * np.cos(2 * np.pi * t / 7) + n6 * np.cos(4 * np.pi * t / 7)
+                                                       + n7 * np.cos(6 * np.pi * t / 7) + n8 * np.cos(8 * np.pi * t / 7))
 
     unpromoted_transactions = product_transactions[~product_transactions['OnPromotion']]
     promoted_transactions = product_transactions[product_transactions['OnPromotion']]
@@ -78,23 +88,20 @@ def predict_baseline(product_key, transactions):
     plt.legend(['UnitVolume', 'Predicted baseline UnitVolume'], loc='upper center')
     plt.title(f'Baseline vs. actual UnitVolume for ProductKey {product_key}')
     promotion_dates = promoted_transactions['TransactionDate'].values
-    i = 0
-    while i < len(promotion_dates):
-        start = promotion_dates[i]
-        while i < len(promotion_dates) - 1 and (promotion_dates[i+1] - promotion_dates[i]) / np.timedelta64(1, 'D') == 1.0:
-            i += 1
-        end = promotion_dates[i]
-        i += 1
-        plt.axvspan(start, end, color='green', alpha=0.2)
-
+    mark_promos(product_key, promotion_dates)
     plt.savefig(f'baseline_{product_key}/baseline_unit_volume_{product_key}.png')
     plt.cla()
 
-    sales_prices = product_transactions['ActualSales']
-    """
-    al.sum_values_groupby(product_transactions, ['TransactionDate', 'OnPromotion'], 'UnitVolume').unstack() \
-        .plot(title=f'Baseline volume for product key {product_key}')
-    """
+    sales_prices = (product_transactions['ActualSales'] / product_transactions['UnitVolume']).values
+    plt.figure(figsize=(12, 4))
+    plt.plot(product_transactions['TransactionDate'].values, product_transactions['ActualSales'].values)
+    plt.plot(product_transactions['TransactionDate'].values, np.multiply(sales_prices, yaxis))
+    plt.legend(['ActualSales', 'Predicted baseline sales'], loc='upper center')
+    plt.title(f'Baseline sales vs. ActualSales for ProductKey {product_key}')
+    promotion_dates = promoted_transactions['TransactionDate'].values
+    mark_promos(product_key, promotion_dates)
+    plt.savefig(f'baseline_{product_key}/baseline_sales_{product_key}.png')
+    plt.cla()
 
 
 transactions = al.read_files()
