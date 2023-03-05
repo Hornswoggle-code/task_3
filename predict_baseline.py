@@ -75,7 +75,7 @@ def predict_baseline(product_key, transactions):
     plt.figure(figsize=(12, 4))
     plt.plot(product_transactions['TransactionDate'].values, product_transactions['UnitVolume'].values)
     plt.plot(product_transactions['TransactionDate'].values, yaxis)
-    plt.legend(['UnitVolume', 'Predicted baseline UnitVolume'])
+    plt.legend(['UnitVolume', 'Predicted baseline UnitVolume'], loc='upper center')
     plt.title(f'Baseline vs. actual UnitVolume for ProductKey {product_key}')
     promotion_dates = promoted_transactions['TransactionDate'].values
     i = 0
@@ -90,6 +90,7 @@ def predict_baseline(product_key, transactions):
     plt.savefig(f'baseline_{product_key}/baseline_unit_volume_{product_key}.png')
     plt.cla()
 
+    sales_prices = product_transactions['ActualSales']
     """
     al.sum_values_groupby(product_transactions, ['TransactionDate', 'OnPromotion'], 'UnitVolume').unstack() \
         .plot(title=f'Baseline volume for product key {product_key}')
