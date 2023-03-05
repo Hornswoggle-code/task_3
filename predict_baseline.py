@@ -39,7 +39,7 @@ def predict_baseline(product_key, transactions):
 
     product_transactions.sort_values(by='TransactionDate', inplace=True)
 
-    def func(t, a, b, c, d, e, f, g, x, y, k1, k2, k3, k4,
+    def func(t, a, b, c, d, e, f, g, k1, k2, k3, k4,
              l1, l2, l3, l4, l5, l6, l7, l8, l9, l10, l11, l12, l13, l14, l15, l16,
              m1, m2, m3, m4, m5, m6, m7, m8, m9, m10, m11, m12, m13, m14, m15, m16,
              n1, n2, n3, n4, n5, n6, n7, n8):
@@ -79,7 +79,7 @@ def predict_baseline(product_key, transactions):
                                     popt[21], popt[22], popt[23], popt[24], popt[25], popt[26], popt[27], popt[28],
                                     popt[29], popt[30], popt[31], popt[32], popt[33], popt[34], popt[35], popt[36],
                                     popt[37], popt[38], popt[39], popt[40], popt[41], popt[42], popt[43], popt[44],
-                                    popt[45], popt[46], popt[47], popt[48], popt[49], popt[50], popt[51], popt[52]),
+                                    popt[45], popt[46], popt[47], popt[48], popt[49], popt[50]),
                      xaxis_extended))
 
     plt.figure(figsize=(12, 4))
