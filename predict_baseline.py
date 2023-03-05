@@ -58,6 +58,7 @@ def predict_baseline(product_key, transactions):
                                           + n7 * np.cos(6 * np.pi * t / 7) + n8 * np.cos(8 * np.pi * t / 7))
 
     unpromoted_transactions = product_transactions[~product_transactions['OnPromotion']]
+    promoted_transactions = product_transactions[product_transactions['OnPromotion']]
 
     xaxis = list(map(lambda x: (x - pd.Timestamp(2020, 1, 1)).days, unpromoted_transactions['TransactionDate'].values))
     popt, _ = curve_fit(func, xaxis, unpromoted_transactions['UnitVolume'].values)
@@ -76,6 +77,16 @@ def predict_baseline(product_key, transactions):
     plt.plot(product_transactions['TransactionDate'].values, yaxis)
     plt.legend(['UnitVolume', 'Predicted baseline UnitVolume'])
     plt.title(f'Baseline vs. actual UnitVolume for ProductKey {product_key}')
+    promotion_dates = promoted_transactions['TransactionDate'].values
+    i = 0
+    while i < len(promotion_dates):
+        start = promotion_dates[i]
+        while i < len(promotion_dates) - 1 and (promotion_dates[i+1] - promotion_dates[i]) / np.timedelta64(1, 'D') == 1.0:
+            i += 1
+        end = promotion_dates[i]
+        i += 1
+        plt.axvspan(start, end, color='green', alpha=0.2)
+
     plt.savefig(f'baseline_{product_key}/baseline_unit_volume_{product_key}.png')
     plt.cla()
 
