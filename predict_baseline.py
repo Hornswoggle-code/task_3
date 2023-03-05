@@ -71,7 +71,7 @@ def predict_baseline(product_key, transactions):
                                     popt[45], popt[46], popt[47], popt[48], popt[49], popt[50], popt[51], popt[52]),
                      xaxis_extended))
 
-    plt.figure(figsize=(10, 4))
+    plt.figure(figsize=(12, 4))
     plt.plot(product_transactions['TransactionDate'].values, product_transactions['UnitVolume'].values)
     plt.plot(product_transactions['TransactionDate'].values, yaxis)
     plt.legend(['UnitVolume', 'Predicted baseline UnitVolume'])
