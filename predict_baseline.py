@@ -1,4 +1,4 @@
-import datetime
+import sys
 import os
 
 import pandas as pd
@@ -9,7 +9,7 @@ import numpy as np
 from scipy.optimize import curve_fit
 
 
-def mark_promos(product_key, dates):
+def mark_promos(dates):
     i = 0
     while i < len(dates):
         start = dates[i]
@@ -63,9 +63,9 @@ def predict_baseline(product_key, transactions):
              + m13 * np.cos(26 * np.pi * t / 365) + m14 * np.cos(28 * np.pi * t / 365)
              + m15 * np.cos(30 * np.pi * t / 365) + m16 * np.cos(32 * np.pi * t / 365)) \
             + (e * t ** 2 + f * t + g) * (n1 * np.sin(2 * np.pi * t / 7) + n2 * np.sin(4 * np.pi * t / 7)
-                                                       + n3 * np.sin(6 * np.pi * t / 7) + n4 * np.sin(8 * np.pi * t / 7)
-                                                       + n5 * np.cos(2 * np.pi * t / 7) + n6 * np.cos(4 * np.pi * t / 7)
-                                                       + n7 * np.cos(6 * np.pi * t / 7) + n8 * np.cos(8 * np.pi * t / 7))
+                                          + n3 * np.sin(6 * np.pi * t / 7) + n4 * np.sin(8 * np.pi * t / 7)
+                                          + n5 * np.cos(2 * np.pi * t / 7) + n6 * np.cos(4 * np.pi * t / 7)
+                                          + n7 * np.cos(6 * np.pi * t / 7) + n8 * np.cos(8 * np.pi * t / 7))
 
     unpromoted_transactions = product_transactions[~product_transactions['OnPromotion']]
     promoted_transactions = product_transactions[product_transactions['OnPromotion']]
@@ -88,25 +88,42 @@ def predict_baseline(product_key, transactions):
     plt.legend(['UnitVolume', 'Predicted baseline UnitVolume'], loc='upper center')
     plt.title(f'Baseline vs. actual UnitVolume for ProductKey {product_key}')
     promotion_dates = promoted_transactions['TransactionDate'].values
-    mark_promos(product_key, promotion_dates)
+    mark_promos(promotion_dates)
     plt.savefig(f'baseline_{product_key}/baseline_unit_volume_{product_key}.png')
     plt.cla()
 
-    sales_prices = (product_transactions['ActualSales'] / product_transactions['UnitVolume']).values
+    prices = (product_transactions['ActualSales'] / product_transactions['UnitVolume']).values
     plt.figure(figsize=(12, 4))
     plt.plot(product_transactions['TransactionDate'].values, product_transactions['ActualSales'].values)
-    plt.plot(product_transactions['TransactionDate'].values, np.multiply(sales_prices, yaxis))
+    sales = np.multiply(prices, yaxis)
+    plt.plot(product_transactions['TransactionDate'].values, sales)
     plt.legend(['ActualSales', 'Predicted baseline sales'], loc='upper center')
     plt.title(f'Baseline sales vs. ActualSales for ProductKey {product_key}')
-    promotion_dates = promoted_transactions['TransactionDate'].values
-    mark_promos(product_key, promotion_dates)
+    mark_promos(promotion_dates)
     plt.savefig(f'baseline_{product_key}/baseline_sales_{product_key}.png')
     plt.cla()
+
+    prediction_days = list(
+        map(lambda x: (x - pd.Timestamp(2020, 1, 1)).days, promoted_transactions['TransactionDate'].values))
+    predictions = list(map(lambda x: func(x, popt[0], popt[1], popt[2], popt[3], popt[4],
+                                          popt[5], popt[6], popt[7], popt[8], popt[9], popt[10], popt[11], popt[12],
+                                          popt[13], popt[14], popt[15], popt[16], popt[17], popt[18], popt[19],
+                                          popt[20], popt[21], popt[22], popt[23], popt[24], popt[25], popt[26],
+                                          popt[27], popt[28], popt[29], popt[30], popt[31], popt[32], popt[33],
+                                          popt[34], popt[35], popt[36], popt[37], popt[38], popt[39], popt[40],
+                                          popt[41], popt[42], popt[43], popt[44], popt[45], popt[46], popt[47],
+                                          popt[48], popt[49], popt[50]),
+                           prediction_days))
+    uplift = sum([s - p for s, p in zip(promoted_transactions['ActualSales'].values, predictions)])
+    discount = promoted_transactions['SalesDiscount'].sum()
+    elasticity = - uplift / discount if discount < 0 else 0
+
+    file = open(f'baseline_{product_key}/elasticity_{product_key}.txt', 'w')
+    file.write(f'Elasticity for ProductKey {product_key}: {elasticity}')
+    file.close()
 
 
 transactions = al.read_files()
 
-predict_baseline(49340, transactions)
-predict_baseline(49341, transactions)
-predict_baseline(49333, transactions)
-predict_baseline(49329, transactions)
+for product_key in sys.argv[1:]:
+    predict_baseline(int(product_key), transactions)
