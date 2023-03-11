@@ -39,16 +39,18 @@ def predict_baseline(product_key, transactions):
 
     product_transactions.sort_values(by='TransactionDate', inplace=True)
 
-    unpromoted_transactions = product_transactions[~product_transactions['OnPromotion']]
+    unpromoted_transactions = product_transactions[(~product_transactions['OnPromotion']) |
+                                                   (product_transactions['TransactionDate'] == '2020-1-1') |
+                                                   (product_transactions['TransactionDate'] == '2022-12-31')]
     promoted_transactions = product_transactions[product_transactions['OnPromotion']]
 
-    def func(t, a, b, c, d, k1, k2, k3, k4,
+    def func(t, a, b, c, d, e, f, g, h, i, k1, k2, k3, k4,
              l1, l2, l3, l4, l5, l6, l7, l8, l9, l10, l11, l12, l13, l14, l15, l16,
              m1, m2, m3, m4, m5, m6, m7, m8, m9, m10, m11, m12, m13, m14, m15, m16,
-             n1, n2, n3, n4, n5, n6, n7, n8):
-        return a + b * t + c * t ** 2 + d * t ** 3 + (
-                k1 * np.sin(2 * np.pi * t / 1096) + k2 * np.cos(2 * np.pi * t / 1096) +
-                k3 * np.sin(4 * np.pi * t / 1096) + k4 * np.cos(4 * np.pi * t / 1096)
+             n1, n2, n5, n6):
+        return a + b * t + c * t ** 2 + ((d + e * t + f * t**2) * (
+                k1 * np.sin(2 * np.pi * t / 1096) + k2 * np.sin(4 * np.pi * t / 1096)
+                + k3 * np.cos(2 * np.pi * t / 1096) + k4 * np.cos(4 * np.pi * t / 1096)
                 + l1 * np.sin(2 * np.pi * t / 365) + l2 * np.sin(4 * np.pi * t / 365)
                 + l3 * np.sin(6 * np.pi * t / 365) + l4 * np.sin(8 * np.pi * t / 365)
                 + l5 * np.sin(10 * np.pi * t / 365) + l6 * np.sin(12 * np.pi * t / 365)
@@ -64,18 +66,17 @@ def predict_baseline(product_key, transactions):
                 + m9 * np.cos(18 * np.pi * t / 365) + m10 * np.cos(20 * np.pi * t / 365)
                 + m11 * np.cos(22 * np.pi * t / 365) + m12 * np.cos(24 * np.pi * t / 365)
                 + m13 * np.cos(26 * np.pi * t / 365) + m14 * np.cos(28 * np.pi * t / 365)
-                + m15 * np.cos(30 * np.pi * t / 365) + m16 * np.cos(32 * np.pi * t / 365)
-                + n1 * np.sin(2 * np.pi * t / 7) + n2 * np.sin(4 * np.pi * t / 7)
-                + n3 * np.sin(6 * np.pi * t / 7) + n4 * np.sin(8 * np.pi * t / 7)
-                + n5 * np.cos(2 * np.pi * t / 7) + n6 * np.cos(4 * np.pi * t / 7)
-                + n7 * np.cos(6 * np.pi * t / 7) + n8 * np.cos(8 * np.pi * t / 7))
+                + m15 * np.cos(30 * np.pi * t / 365) + m16 * np.cos(32 * np.pi * t / 365))
+                + (g + h * t + i * t**2) *
+                (n1 * np.sin(2 * np.pi * t / 7) + n2 * np.sin(4 * np.pi * t / 7)
+                 + n5 * np.cos(2 * np.pi * t / 7) + n6 * np.cos(4 * np.pi * t / 7)))
 
     xaxis = list(map(lambda x: (x - pd.Timestamp(2020, 1, 1)).days,
                      unpromoted_transactions['TransactionDate'].values))
     popt, _ = curve_fit(func, xaxis, unpromoted_transactions['UnitVolume'].values)
+
     xaxis_extended = list(range(product_transactions.shape[0]))
-    yaxis = list(map(lambda x: func(x, *popt),
-                     xaxis_extended))
+    yaxis = list(map(lambda x: func(x, *popt), xaxis_extended))
 
     plt.figure(figsize=(12, 4))
     plt.plot(product_transactions['TransactionDate'].values, product_transactions['UnitVolume'].values)
@@ -87,7 +88,7 @@ def predict_baseline(product_key, transactions):
     plt.savefig(f'baseline_{product_key}/baseline_unit_volume_{product_key}.png')
     plt.cla()
 
-    prices = (product_transactions['ActualSales'] / product_transactions['UnitVolume']).values
+    prices = (product_transactions['RetailFullPrice'] / product_transactions['UnitVolume']).values
     plt.figure(figsize=(12, 4))
     plt.plot(product_transactions['TransactionDate'].values, product_transactions['ActualSales'].values)
     sales = np.multiply(prices, yaxis)
@@ -100,8 +101,10 @@ def predict_baseline(product_key, transactions):
 
     prediction_days = list(
         map(lambda x: (x - pd.Timestamp(2020, 1, 1)).days, promoted_transactions['TransactionDate'].values))
+    prices = (promoted_transactions['RetailFullPrice'] / promoted_transactions['UnitVolume']).values
     predictions = list(map(lambda x: func(x, *popt),
                            prediction_days))
+    predictions = np.multiply(prices, predictions)
     uplift = sum([s - p for s, p in zip(promoted_transactions['ActualSales'].values, predictions)])
     discount = promoted_transactions['SalesDiscount'].sum()
     elasticity = - uplift / discount if discount < 0 else 0
