@@ -74,13 +74,7 @@ def predict_baseline(product_key, transactions):
                      unpromoted_transactions['TransactionDate'].values))
     popt, _ = curve_fit(func, xaxis, unpromoted_transactions['UnitVolume'].values)
     xaxis_extended = list(range(product_transactions.shape[0]))
-    yaxis = list(map(lambda x: func(x, popt[0], popt[1], popt[2], popt[3], popt[4],
-                                    popt[5], popt[6], popt[7], popt[8], popt[9], popt[10], popt[11], popt[12],
-                                    popt[13], popt[14], popt[15], popt[16], popt[17], popt[18], popt[19], popt[20],
-                                    popt[21], popt[22], popt[23], popt[24], popt[25], popt[26], popt[27], popt[28],
-                                    popt[29], popt[30], popt[31], popt[32], popt[33], popt[34], popt[35], popt[36],
-                                    popt[37], popt[38], popt[39], popt[40], popt[41], popt[42], popt[43], popt[44],
-                                    popt[45], popt[46], popt[47]),
+    yaxis = list(map(lambda x: func(x, *popt),
                      xaxis_extended))
 
     plt.figure(figsize=(12, 4))
@@ -106,13 +100,7 @@ def predict_baseline(product_key, transactions):
 
     prediction_days = list(
         map(lambda x: (x - pd.Timestamp(2020, 1, 1)).days, promoted_transactions['TransactionDate'].values))
-    predictions = list(map(lambda x: func(x, popt[0], popt[1], popt[2], popt[3], popt[4],
-                                          popt[5], popt[6], popt[7], popt[8], popt[9], popt[10], popt[11], popt[12],
-                                          popt[13], popt[14], popt[15], popt[16], popt[17], popt[18], popt[19],
-                                          popt[20], popt[21], popt[22], popt[23], popt[24], popt[25], popt[26],
-                                          popt[27], popt[28], popt[29], popt[30], popt[31], popt[32], popt[33],
-                                          popt[34], popt[35], popt[36], popt[37], popt[38], popt[39], popt[40],
-                                          popt[41], popt[42], popt[43], popt[44], popt[45], popt[46], popt[47]),
+    predictions = list(map(lambda x: func(x, *popt),
                            prediction_days))
     uplift = sum([s - p for s, p in zip(promoted_transactions['ActualSales'].values, predictions)])
     discount = promoted_transactions['SalesDiscount'].sum()

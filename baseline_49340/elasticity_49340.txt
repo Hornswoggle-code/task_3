@@ -1,1 +1,1 @@
-Elasticity for ProductKey 49340: 7.4227136427128855
+Elasticity for ProductKey 49340: 7.445565368472744
